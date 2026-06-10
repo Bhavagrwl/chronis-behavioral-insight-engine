@@ -9,8 +9,6 @@ This project analyzes behavioral data and generates:
 - Evidence-backed insights
 - Behavioral anomalies
 
-The solution focuses on explainability and robustness.
-
 ---
 
 ## Project Structure

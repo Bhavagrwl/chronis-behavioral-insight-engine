@@ -1,89 +1,155 @@
 # Design Decisions
 
-## Overview
+## Objective
 
-This project implements a Behavioral Insight Engine that analyzes user behavioral data and generates explainable insights, confidence scores, and anomaly detections.
+The goal of this project is to generate explainable behavioral insights from time-series user activity data while maintaining transparency, robustness, and ease of interpretation.
 
-The solution prioritizes interpretability and reasoning over model complexity.
-
----
-
-## Pattern Detection
-
-### Approach
-
-Pattern detection is based on trend analysis using linear regression.
-
-For each metric:
-
-- Days are represented as x-values.
-- Metric values are represented as y-values.
-- A trend line is fitted using NumPy's polyfit().
-
-The resulting slope indicates whether behavior is increasing, decreasing, or stable.
-
-### Why This Approach?
-
-Compared to comparing only the first and last week, trend analysis uses all available observations and is more robust to short-term fluctuations.
+The system focuses on identifying meaningful behavioral patterns, providing supporting evidence, and communicating confidence in a way that is easy to understand and validate.
 
 ---
 
-## Insight Generation
+# Methodology
 
-Insights are generated from trend strength and direction.
+## 1. Trend-Based Pattern Discovery
 
-Each insight contains:
+### Decision
 
-- Insight statement
-- Confidence score
-- Supporting evidence
+Behavioral patterns are identified using linear trend analysis on each metric independently.
 
-Example:
+### Rationale
 
-- Physical activity shows a decreasing trend.
-- Confidence: 0.8
-- Evidence: Average daily steps declined from X to Y.
+Several approaches were considered:
 
----
+1. Comparing only the first and last week.
+2. Moving-average based trend detection.
+3. Linear regression trend estimation.
 
-## Confidence Scoring
+Linear regression was selected because it uses all observations within the available time window rather than relying on a small subset of data points.
 
-Confidence is assigned using rule-based buckets.
+Using all observations makes the system less sensitive to short-term fluctuations and produces more stable trend estimates.
 
-| Trend Magnitude | Confidence |
-| --------------- | ---------- |
-| < 0.5%          | 0          |
-| 0.5% - 1%       | 0.6        |
-| 1% - 2%         | 0.8        |
-| > 2%            | 0.95       |
+### Assumption
 
-This approach is simple, explainable, and deterministic.
+The dominant behavioral pattern within the observation period can be reasonably approximated by a linear trend.
 
 ---
 
-## Evidence Sufficiency
+## 2. Rule-Based Insight Generation
 
-When trend magnitude is too small, the system abstains from making a claim.
+### Decision
 
-Example:
+Insights are generated using deterministic rules derived from trend direction and trend magnitude.
+
+### Rationale
+
+The available data consists of a relatively small number of users and observations.
+
+Using machine learning models for insight generation would introduce additional complexity while reducing transparency and interpretability.
+
+Rule-based insights provide:
+
+- Complete explainability
+- Deterministic outputs
+- Easy validation
+- Simple testing
+
+These characteristics are valuable in behavioral analysis systems where every generated insight should be understandable and traceable to the underlying data.
+
+### Example
+
+A negative trend in daily step count produces:
+
+"Physical activity shows a decreasing trend."
+
+This allows users to clearly understand how the conclusion was reached.
+
+---
+
+## 3. Confidence Scoring
+
+### Decision
+
+Confidence scores are assigned using rule-based buckets derived from trend strength.
+
+### Rationale
+
+No labeled data is available to estimate statistically calibrated confidence values.
+
+Instead, confidence is treated as a measure of evidence strength rather than probability.
+
+Larger trend magnitudes indicate stronger behavioral signals and therefore receive higher confidence scores.
+
+### Assumption
+
+Stronger and more consistent trends are more likely to represent meaningful behavioral changes than weak or inconsistent trends.
+
+---
+
+## 4. Evidence Sufficiency and Abstention
+
+### Decision
+
+The system abstains from generating an insight when trend magnitude falls below a predefined threshold.
+
+### Rationale
+
+Behavioral data naturally contains noise and day-to-day variability.
+
+Generating insights from weak signals increases the likelihood of producing misleading conclusions.
+
+Instead of forcing an interpretation, the system explicitly states:
 
 "Insufficient evidence for a meaningful trend."
 
-This prevents over-interpreting noise.
+This design choice prioritizes reliability and reduces the risk of over-interpreting random variation.
+
+### Assumption
+
+No conclusion is preferable to an unsupported conclusion.
 
 ---
 
-## Anomaly Detection
+## 5. Anomaly Detection
 
-Anomalies are currently detected using behavioral deviation from a user's typical values.
+### Decision
 
-A value is flagged when its deviation exceeds a predefined threshold.
+Anomalies are detected using deviation-based behavioral rules rather than machine learning models.
 
-This approach was selected because it is easy to explain and interpret.
+### Rationale
+
+Several alternatives were considered:
+
+- Isolation Forest
+- Local Outlier Factor
+- One-Class SVM
+- Rule-based behavioral thresholds
+
+A rule-based approach was selected because it is simple, transparent, and easy to explain.
+
+Each detected anomaly can be directly linked to a significant deviation from a user's typical behavior, making the results easier to interpret and validate.
+
+### Assumption
+
+Large deviations from typical behavior are more useful for behavioral analysis than observations that are merely statistically uncommon.
 
 ---
 
-## Testing Strategy
+# Engineering Decisions
+
+## Modular Architecture
+
+The solution is separated into:
+
+- Data loading
+- Pattern detection
+- Insight generation
+- Anomaly detection
+
+This separation improves maintainability, readability, and testability while allowing individual components to evolve independently.
+
+---
+
+## Test Coverage
 
 Unit tests were implemented for:
 
@@ -91,31 +157,62 @@ Unit tests were implemented for:
 - Insight generation
 - Anomaly detection
 
-The goal is to ensure correctness and prevent regressions during future modifications.
+Testing focuses on validating core functionality and ensuring that future changes do not unintentionally alter expected behavior.
 
-## Failure Modes
+---
 
-The system has several known limitations:
+# Failure Modes
 
-### Limited Observation Window
+## Limited Observation Window
 
-Behavior is analyzed using only 30 days of data.
-Longer-term seasonal patterns cannot be detected.
+The system analyzes a relatively short observation period.
 
-### Linear Trend Assumption
+Longer-term seasonal, cyclical, or recurring behavioral patterns may not be visible within the available data.
 
-Trend detection uses a linear regression slope.
-Non-linear behavioral changes may not be fully captured.
+---
 
-### Rule-Based Confidence
+## Linear Trend Assumption
 
-Confidence scores are heuristic and not statistically calibrated.
+Behavior is summarized using a linear trend.
 
-### Anomaly Sensitivity
+Non-linear changes, abrupt shifts, or cyclical patterns may not be fully captured by this approach.
 
-Behavioral anomaly thresholds are rule-based and may require tuning for different populations.
+---
 
-### Small Dataset
+## Threshold Sensitivity
 
-The supplied dataset contains only five users.
-Results may differ on larger or noisier datasets.
+Insight confidence and anomaly detection depend on manually selected thresholds.
+
+Thresholds that work well for one dataset may not generalize equally well to different populations or behavioral distributions.
+
+---
+
+## Small Dataset
+
+The available dataset contains a limited number of users and observations.
+
+Results generated from small datasets may be more sensitive to individual behavioral variations and may not fully represent broader populations.
+
+---
+
+## Behavioral Context Is Unavailable
+
+The system analyzes observed behavior only.
+
+It cannot determine the underlying reasons behind behavioral changes.
+
+For example, a decrease in physical activity may be caused by illness, travel, workload, lifestyle changes, or other external factors that are not captured in the data.
+
+---
+
+# Future Improvements
+
+Potential future enhancements include:
+
+- Rolling baseline anomaly detection
+- Behavioral segmentation using clustering techniques
+- Seasonality-aware trend analysis
+- Adaptive confidence calibration
+- Personalized anomaly thresholds based on user history
+
+These enhancements could improve robustness and personalization, particularly when larger datasets and longer observation periods are available.
