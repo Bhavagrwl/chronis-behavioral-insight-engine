@@ -64,9 +64,5 @@ for user in users:
                 f"Deviation: {anomaly['deviation_percent']}%"
             )
 
-
-print("\nTOTAL INSIGHTS:")
-print(len(all_insights))
-
 with open(output_file, "w") as f:
     json.dump(all_insights, f, indent=4)
