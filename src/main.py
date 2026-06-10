@@ -3,8 +3,15 @@ from pattern_detector import detect_pattern
 from insight_generator import generate_insight
 from anomaly_detector import detect_anomalies
 import json
+from pathlib import Path
 
-df = load_data("../data/behavioral_data.csv")
+project_root = Path(__file__).resolve().parent.parent
+
+data_file = project_root / "data" / "behavioral_data.csv"
+
+output_file = project_root / "insights.json"
+
+df = load_data(data_file)
 
 users = df["user_id"].unique()
 
@@ -61,5 +68,5 @@ for user in users:
 print("\nTOTAL INSIGHTS:")
 print(len(all_insights))
 
-with open("../insights.json", "w") as f:
+with open(output_file, "w") as f:
     json.dump(all_insights, f, indent=4)

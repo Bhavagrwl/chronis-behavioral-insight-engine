@@ -92,3 +92,30 @@ Unit tests were implemented for:
 - Anomaly detection
 
 The goal is to ensure correctness and prevent regressions during future modifications.
+
+## Failure Modes
+
+The system has several known limitations:
+
+### Limited Observation Window
+
+Behavior is analyzed using only 30 days of data.
+Longer-term seasonal patterns cannot be detected.
+
+### Linear Trend Assumption
+
+Trend detection uses a linear regression slope.
+Non-linear behavioral changes may not be fully captured.
+
+### Rule-Based Confidence
+
+Confidence scores are heuristic and not statistically calibrated.
+
+### Anomaly Sensitivity
+
+Behavioral anomaly thresholds are rule-based and may require tuning for different populations.
+
+### Small Dataset
+
+The supplied dataset contains only five users.
+Results may differ on larger or noisier datasets.
