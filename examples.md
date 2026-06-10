@@ -1,4 +1,3 @@
-```md
 # Worked Examples
 
 ## Example 1 - User U1
@@ -106,4 +105,3 @@ These examples were generated using the supplied behavioral dataset and demonstr
 - Evidence-backed insights
 - Behavioral anomaly detection
 - Evidence sufficiency (abstaining when trends are weak)
-```
